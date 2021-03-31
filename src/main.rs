@@ -1,3 +1,7 @@
+
+// █▀▄ █ █ █ █▀▀ █     █▀▀ █▀█ ██▄█ ▀█▀ 
+// █▀▀ █ ▄▀▄ ██▄ █▄▄   █▀  █▄█ █ ▀█  █  
+
 use std::collections::HashMap;
 use structopt::StructOpt;
 
@@ -11,11 +15,15 @@ struct Cli {
 
 fn main() {
     let opt = Cli::from_args();
+    // TODO: Load font from JSON
     let font = pixel_font();
 
+    // TODO: Fix dynamic linebuffers
     let mut buffer1: String = String::new();
     let mut buffer2: String = String::new();
     let mut text = opt.text;
+
+    // TODO: no caps!
     text = text.to_lowercase();
 
     buffer1 += &(opt.comment_char.to_owned() + &" ");
