@@ -36,7 +36,10 @@ fn main() {
             continue;
         }
 
-        buffer1 += &font.letters.get(&c).unwrap().rows[0];
+        let symbol = match font.letters.get(&c) {
+            None => continue, 
+            Some(s) => s
+        };
         buffer1 += " ";
         buffer2 += &font.letters.get(&c).unwrap().rows[1];
         buffer2 += " ";
