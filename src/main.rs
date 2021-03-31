@@ -40,8 +40,10 @@ fn main() {
             None => continue, 
             Some(s) => s
         };
+
+        buffer1 += &symbol.rows[0];
         buffer1 += " ";
-        buffer2 += &font.letters.get(&c).unwrap().rows[1];
+        buffer2 += &symbol.rows[1];
         buffer2 += " ";
     }
 
