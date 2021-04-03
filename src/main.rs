@@ -1,224 +1,278 @@
+// █▀▄ █ █ █ █▀▀ █     █▀▀ █▀█ ██▄█ ▀█▀
+// █▀▀ █ ▄▀▄ ██▄ █▄▄   █▀  █▄█ █ ▀█  █
 
-// █▀▄ █ █ █ █▀▀ █     █▀▀ █▀█ ██▄█ ▀█▀ 
-// █▀▀ █ ▄▀▄ ██▄ █▄▄   █▀  █▄█ █ ▀█  █  
-
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Write};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
     #[structopt()]
-    comment_char: String, 
+    comment_char: String,
     #[structopt()]
-    text: String
+    text: String,
+    #[structopt(
+        short = "o",
+        long = "output",
+        help = "output default font to json.",
+        default_value = ""
+    )]
+    output_filepath: String,
+    #[structopt(
+        short = "i",
+        long = "input",
+        help = "output default font to json.",
+        default_value = ""
+    )]
+    input_filepath: String,
 }
 
 fn main() {
     let opt = Cli::from_args();
-    // TODO: Load font from JSON
-    let font = pixel_font();
+    let mut font = pixel_font();
 
-    // TODO: Fix dynamic linebuffers
-    let mut buffer1: String = String::new();
-    let mut buffer2: String = String::new();
+    if opt.input_filepath != "" {
+        let file = match std::fs::read_to_string(&opt.input_filepath) {
+            Ok(file) => file,
+            Err(error) => panic!("Error reading file: {:?}", error),
+        };
+
+        font = match serde_json::from_str(file.as_str()) {
+            Ok(f) => f,
+            Err(error) => panic!("Error deseralizing json: {}", error),
+        };
+    }
+
+    if opt.output_filepath != "" {
+        let output_str = serde_json::to_string_pretty(&font).expect("oops");
+        let mut output = match std::fs::File::create(&opt.output_filepath) {
+            Ok(file) => file,
+            Err(error) => panic!("Error writing file: {:?}", error),
+        };
+
+        match output.write_all(output_str.as_bytes()) {
+            Err(error) => panic!("Error writing file: {:?}],", error),
+            Ok(_) => {
+                println!("Font saved to {}!", &opt.output_filepath)
+            }
+        };
+    }
+
+    let mut buffers: Vec<String> = Vec::new();
+
+    for i in 0..font.font_height {
+        buffers.insert(i as usize, String::new());
+        //buffers[i as usize] = String::new();
+        buffers[i as usize] += &(opt.comment_char.to_owned() + &" ");
+    }
     let mut text = opt.text;
 
-    // TODO: no caps!
+    // TODO: no caps!?
     text = text.to_lowercase();
-
-    buffer1 += &(opt.comment_char.to_owned() + &" ");
-    buffer2 += &(opt.comment_char.to_owned() + &" ");
 
     for c in text.chars() {
         if c == ' ' {
-            buffer1 += "  ";
-            buffer2 += "  ";
+            for _i in 0..font.space_width {
+                for h in 0..font.font_height {
+                    buffers[h as usize] += " ";
+                }
+            }
             continue;
         }
 
         let symbol = match font.letters.get(&c) {
-            None => continue, 
-            Some(s) => s
+            None => continue,
+            Some(s) => s,
         };
 
-        buffer1 += &symbol.rows[0];
-        buffer1 += " ";
-        buffer2 += &symbol.rows[1];
-        buffer2 += " ";
+        for h in 0..font.font_height {
+            buffers[h as usize] += &symbol.rows[h as usize];
+
+            for _i in 0..font.letter_spacing {
+                buffers[h as usize] += " ";
+            }
+        }
     }
 
-    println!("{}", buffer1);
-    println!("{}", buffer2);
+    for buffer in buffers {
+        println!("{}", buffer);
+    }
 }
 
-
+#[derive(serde::Deserialize, serde::Serialize)]
 struct Letter {
-    rows: Vec<String>
+    rows: Vec<String>,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
 struct Font {
-    letters: HashMap<char, Letter>
+    font_height: u8,
+    space_width: u8,
+    letter_spacing: u8,
+    letters: HashMap<char, Letter>,
 }
 
 fn pixel_font() -> Font {
-    let mut font: Font = Font{
-        letters: HashMap::new()
+    let mut font: Font = Font {
+        font_height: 2,
+        letters: HashMap::new(),
+        letter_spacing: 1,
+        space_width: 2,
     };
-    font.letters.insert('a', Letter{
-        rows: [
-            "█▀▄".into(), 
-            "█▀█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('b', Letter{
-        rows: [
-            "██▀".into(), 
-            "█▄█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('c', Letter{
-        rows: [
-            "█▀▀".into(), 
-            "▀▄▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('d', Letter{
-        rows: [
-            "█▀█".into(), 
-            "█▄▀".into() 
-        ].to_vec()
-    });
-    font.letters.insert('e', Letter{
-        rows: [
-            "█▀▀".into(), 
-            "██▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('f', Letter{
-        rows: [
-            "█▀▀".into(), 
-            "█▀ ".into() 
-        ].to_vec()
-    });
-    font.letters.insert('g', Letter{
-        rows: [
-            "█▀▀".into(), 
-            "█▄▀".into() 
-        ].to_vec()
-    });
-    font.letters.insert('h', Letter{
-        rows: [
-            "█ █".into(), 
-            "█▀█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('i', Letter{
-        rows: [
-            "█".into(), 
-            "█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('j', Letter{
-        rows: [
-            "  █".into(), 
-            "█▄█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('k', Letter{
-        rows: [
-            "█ █".into(), 
-            "█▀▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('l', Letter{
-        rows: [
-            "█  ".into(), 
-            "█▄▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('m', Letter{
-        rows: [
-            "██▄██".into(), 
-            "█ ▀ █".into() 
-        ].to_vec()
-    });
-    font.letters.insert('n', Letter{
-        rows: [
-            "██▄█".into(), 
-            "█ ▀█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('o', Letter{
-        rows: [
-            "█▀█".into(), 
-            "█▄█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('p', Letter{
-        rows: [
-            "█▀▄".into(), 
-            "█▀▀".into() 
-        ].to_vec()
-    });
-    font.letters.insert('q', Letter{
-        rows: [
-            "█▀█".into(), 
-            "▀▀█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('r', Letter{
-        rows: [
-            "█▀█".into(), 
-            "█▀▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('s', Letter{
-        rows: [
-            "█▀▀".into(), 
-            "▄██".into() 
-        ].to_vec()
-    });
-    font.letters.insert('t', Letter{
-        rows: [
-            "▀█▀".into(), 
-            " █ ".into() 
-        ].to_vec()
-    });
-    font.letters.insert('u', Letter{
-        rows: [
-            "█ █".into(), 
-            "█▄█".into() 
-        ].to_vec()
-    });
-    font.letters.insert('v', Letter{
-        rows: [
-            "█ █".into(), 
-            "▀▄▀".into() 
-        ].to_vec()
-    });
-    font.letters.insert('w', Letter{
-        rows: [
-            "█ ▄ █".into(), 
-            "▀▄▀▄▀".into() 
-        ].to_vec()
-    });
-    font.letters.insert('x', Letter{
-        rows: [
-            "█ █".into(), 
-            "▄▀▄".into() 
-        ].to_vec()
-    });
-    font.letters.insert('y', Letter{
-        rows: [
-            "█ █".into(), 
-            " █ ".into() 
-        ].to_vec()
-    });
-    font.letters.insert('z', Letter{
-        rows: [
-            "▀▀█".into(), 
-            "██▄".into() 
-        ].to_vec()
-    });
+    font.letters.insert(
+        'a',
+        Letter {
+            rows: ["█▀▄".into(), "█▀█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'b',
+        Letter {
+            rows: ["██▀".into(), "█▄█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'c',
+        Letter {
+            rows: ["█▀▀".into(), "▀▄▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'd',
+        Letter {
+            rows: ["█▀█".into(), "█▄▀".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'e',
+        Letter {
+            rows: ["█▀▀".into(), "██▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'f',
+        Letter {
+            rows: ["█▀▀".into(), "█▀ ".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'g',
+        Letter {
+            rows: ["█▀▀".into(), "█▄▀".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'h',
+        Letter {
+            rows: ["█ █".into(), "█▀█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'i',
+        Letter {
+            rows: ["█".into(), "█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'j',
+        Letter {
+            rows: ["  █".into(), "█▄█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'k',
+        Letter {
+            rows: ["█ █".into(), "█▀▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'l',
+        Letter {
+            rows: ["█  ".into(), "█▄▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'm',
+        Letter {
+            rows: ["██▄██".into(), "█ ▀ █".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'n',
+        Letter {
+            rows: ["██▄█".into(), "█ ▀█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'o',
+        Letter {
+            rows: ["█▀█".into(), "█▄█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'p',
+        Letter {
+            rows: ["█▀▄".into(), "█▀▀".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'q',
+        Letter {
+            rows: ["█▀█".into(), "▀▀█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'r',
+        Letter {
+            rows: ["█▀█".into(), "█▀▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        's',
+        Letter {
+            rows: ["█▀▀".into(), "▄██".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        't',
+        Letter {
+            rows: ["▀█▀".into(), " █ ".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'u',
+        Letter {
+            rows: ["█ █".into(), "█▄█".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'v',
+        Letter {
+            rows: ["█ █".into(), "▀▄▀".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'w',
+        Letter {
+            rows: ["█ ▄ █".into(), "▀▄▀▄▀".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'x',
+        Letter {
+            rows: ["█ █".into(), "▄▀▄".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'y',
+        Letter {
+            rows: ["█ █".into(), " █ ".into()].to_vec(),
+        },
+    );
+    font.letters.insert(
+        'z',
+        Letter {
+            rows: ["▀▀█".into(), "██▄".into()].to_vec(),
+        },
+    );
     return font;
 }
