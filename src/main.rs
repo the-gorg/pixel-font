@@ -1,15 +1,21 @@
 // █▀▄ █ █ █ █▀▀ █     █▀▀ █▀█ ██▄█ ▀█▀
 // █▀▀ █ ▄▀▄ ██▄ █▄▄   █▀  █▄█ █ ▀█  █
 
-use std::{collections::HashMap, io::Write};
+use std::collections::HashMap;
+use std::io::Write;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
     #[structopt()]
-    comment_char: String,
-    #[structopt()]
     text: String,
+    #[structopt(
+        short = "p",
+        long = "prefix",
+        help = "prefix each line with this character.",
+        default_value = ""
+    )]
+    prefix: String,
     #[structopt(
         short = "o",
         long = "output",
@@ -20,7 +26,7 @@ struct Cli {
     #[structopt(
         short = "i",
         long = "input",
-        help = "output default font to json.",
+        help = "path to json font.",
         default_value = ""
     )]
     input_filepath: String,
@@ -30,7 +36,7 @@ fn main() {
     let opt = Cli::from_args();
     let mut font = pixel_font();
 
-    if opt.input_filepath != "" {
+    if !opt.input_filepath.is_empty() {
         let file = match std::fs::read_to_string(&opt.input_filepath) {
             Ok(file) => file,
             Err(error) => panic!("Error reading file: {:?}", error),
@@ -42,7 +48,7 @@ fn main() {
         };
     }
 
-    if opt.output_filepath != "" {
+    if !opt.output_filepath.is_empty() {
         let output_str = serde_json::to_string_pretty(&font).expect("oops");
         let mut output = match std::fs::File::create(&opt.output_filepath) {
             Ok(file) => file,
@@ -59,11 +65,13 @@ fn main() {
 
     let mut buffers: Vec<String> = Vec::new();
 
-    for i in 0..font.font_height {
-        buffers.insert(i as usize, String::new());
-        //buffers[i as usize] = String::new();
-        buffers[i as usize] += &(opt.comment_char.to_owned() + &" ");
+    if !opt.prefix.is_empty() {
+        for i in 0..font.font_height {
+            buffers.insert(i as usize, String::new());
+            buffers[i as usize] += &(opt.prefix.to_owned() + " ");
+        }
     }
+
     let mut text = opt.text;
 
     // TODO: no caps!?
@@ -274,5 +282,5 @@ fn pixel_font() -> Font {
             rows: ["▀▀█".into(), "██▄".into()].to_vec(),
         },
     );
-    return font;
+    font
 }
