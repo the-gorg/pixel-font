@@ -1,10 +1,11 @@
-#Pixel-Font
+
+# Pixel-Font
 A simple program that ouputs ascii art text to be used as comment header (using the optional prefix for your chosen comment symbols) or whatever you like!
 
-##Screenshot
+## Screenshot
 <img src="screenshots/example.png">
 
-##Example Vim integration
+## Example Vim integration
 ```
 function FontComment(arg)
     let l:comment = split(&commentstring, '%s')[0]
