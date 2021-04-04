@@ -9,7 +9,7 @@ A simple program that ouputs ascii art text to be used as comment header (using 
 ```vim
 function FontComment(arg)
     let l:comment = split(&commentstring, '%s')[0]
-     execute "read !pixel-font '". a:arg."' \ -p '". l:comment. "\'"
+     execute "read !pixel-font '". a:arg."' -p '". l:comment. "'"
 endfunction
 
 command! -nargs=1 Fc :call FontComment("<args>")
