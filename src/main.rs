@@ -1,5 +1,5 @@
-// █▀▄ █ █ █ █▀▀ █     █▀▀ █▀█ ██▄█ ▀█▀
-// █▀▀ █ ▄▀▄ ██▄ █▄▄   █▀  █▄█ █ ▀█  █
+// █▀▄ ▄▄▄ ▄ ▄ ▄▄▄ ▄   █▀▀ ▄▄▄ ▄▄▄ ▄▄▄
+// █▀▀ ▄█▄ ▄▀▄ ██▄ █▄▄ █▀  █▄█ █ █  █
 
 use std::collections::HashMap;
 use std::io::Write;
@@ -75,7 +75,7 @@ fn main() {
     let mut text = opt.text;
 
     // TODO: no caps!?
-    text = text.to_lowercase();
+    //text = text.to_lowercase();
 
     for c in text.chars() {
         if c == ' ' {
@@ -88,7 +88,21 @@ fn main() {
         }
 
         let symbol = match font.letters.get(&c) {
-            None => continue,
+            None => {
+                if c.is_lowercase() {
+                    match font.letters.get(&c.to_uppercase().nth(0).unwrap()) {
+                        None => continue,
+                        Some(l) => l,
+                    }
+                } else if c.is_uppercase() {
+                    match font.letters.get(&c.to_lowercase().nth(0).unwrap()) {
+                        None => continue,
+                        Some(l) => l,
+                    }
+                } else {
+                    continue;
+                }
+            }
             Some(s) => s,
         };
 
@@ -118,6 +132,9 @@ struct Font {
     letter_spacing: u8,
     letters: HashMap<char, Letter>,
 }
+
+// █▀█ █▀▀ █▀▀ █▀▄ █ █ █   ▀█▀   █▀▀ █▀█ ██▄█ ▀█▀
+// █▄▀ ██▄ █▀  █▀█ █▄█ █▄▄  █    █▀  █▄█ █ ▀█  █
 
 fn pixel_font() -> Font {
     let mut font: Font = Font {
